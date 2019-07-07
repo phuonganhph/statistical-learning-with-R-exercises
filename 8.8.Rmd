@@ -1,0 +1,77 @@
+---
+title: "8.8ex by Anh"
+output:
+  html_document:
+    df_print: paged
+---
+##a Split data into training and test set
+```{r}
+library(tree)
+library(ISLR)
+library(data.table)
+library(randomForest)
+
+set.seed(1)
+dt <- data.table(Carseats)
+n <- length(dt$Sales)
+rows <- sample(n,n/2)
+dt.train=data.table(dt[rows,])
+dt.test=data.table(dt[-rows,])
+```
+
+##b Fit a regression tree
+```{r}
+tree.carseats <- tree(Sales~., data = dt.train)
+plot(tree.carseats)
+text(tree.carseats, pretty =0)
+```
+
+```{r}
+tree.pred=predict(tree.carseats,dt.test)
+mean((tree.pred-dt.test$Sales) ^ 2)
+```
+Test MSE is 4.148897 
+
+##c Cross-validation + Pruning
+```{r}
+cv.carseats <- cv.tree(tree.carseats)
+plot(cv.carseats$size, cv.carseats$dev, type = "b")
+tree.min <- which.min(cv.carseats$dev)
+points(tree.min, cv.carseats$dev[tree.min], col = "red", cex = 2, pch = 20)
+```
+
+The tree with 8 terminal nodes results in the lowest cross-validation error rate.
+
+```{r}
+prune.carseats =prune.tree(tree.carseats, best =8)
+plot(prune.carseats)
+text(prune.carseats,pretty =0)
+
+prune.pred=predict(prune.carseats,dt.test)
+mean((prune.pred-dt.test$Sales) ^ 2)
+```
+
+It is observed that pruning the tree increases the test MSE to 5.09085.
+
+##d Bagging
+```{r}
+bag.carseats<-randomForest(Sales~.,data=dt.train, mtry=10, ntree=500, importance =TRUE)
+bag.pred=predict(bag.carseats,dt.test)
+mean((bag.pred-dt.test$Sales) ^2 )
+importance(bag.carseats)
+```
+Test MSE now is 2.633915
+
+From the output, we can see that ShelveLoc and Price are the two most important predictors and that Bagging improves the tree alot.
+
+##e Random Forest 
+```{r}
+rf.carseats<-randomForest(Sales~.,data=dt.train, mtry=3, ntree=500, importance =TRUE)
+rf.pred=predict(rf.carseats,dt.test)
+mean((rf.pred-dt.test$Sales) ^2 )
+importance(bag.carseats)
+```
+
+Compared to Bagging, Random Forest has a difference in the consideration of predictors. Indeed, when building these decision trees, each time a split in a tree is considered, a random selection of m predictors is chosen instead of the full set of predictors. For this case, with m = square root of 10 = 3, Test MSE now is 3.321154
+
+Similarly, ShelveLoc and Price are the two most important predictors.

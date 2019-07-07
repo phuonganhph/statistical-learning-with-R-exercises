@@ -1,0 +1,54 @@
+---
+title: '10.10'
+output:
+  html_document:
+    df_print: paged
+---
+
+##a) Generate data set
+```{r}
+set.seed(2)
+dt <- rbind(matrix(rnorm(20*50, mean = 0), nrow = 20), matrix(rnorm(20*50, mean=1), nrow = 20), matrix(rnorm(20*50, mean=2), nrow = 20))
+```
+
+##b) PCA
+```{r}
+pca =prcomp(dt , scale =TRUE)
+plot(pca$x[, 1:2], col =c(rep(1,20), rep(2,20), rep(3,20)), pch = 20)
+```
+
+##c) K-means clustering K = 3 
+```{r}
+km.3 =kmeans(dt,3,nstart=20)
+true_class = c(rep(1,20), rep(2,20), rep(3,20))
+table(km.3$cluster, true_class)
+```
+The clusters obtained in K-means clustering match with the true class labels.
+
+##d) K-means clustering K = 2
+```{r}
+km.2 =kmeans(dt,2,nstart=20)
+km.2$cluster
+```
+Now two classes are combined.
+
+##e) K-means clustering K = 4
+```{r}
+km.4 =kmeans(dt,4,nstart=20)
+km.4$cluster
+```
+One of the classes is splitted in two.
+
+##f) K-means clustering K = 3 on first two principal component score vectors
+```{r}
+km.pca = kmeans(pca$x[,1:2], 3, nstart = 20)
+table(km.pca$cluster, true_class)
+```
+Similarly, the clusters obtained in K-means clustering match with the true class labels.
+
+##g) K-means clustering K = 3 on scaled data
+```{r}
+km.3.scaled = kmeans(scale(dt), 3, nstart=20)
+table(km.3.scaled$cluster, true_class)
+```
+Similarly, the clusters obtained in K-means clustering match with the true class labels. Scaling does not change the results.

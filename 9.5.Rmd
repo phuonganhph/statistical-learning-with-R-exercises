@@ -1,0 +1,67 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+#a
+```{r}
+library(MASS)
+library(ISLR)
+library(data.table)
+library(e1071)
+library(ggplot2)
+set.seed(1)
+x1=runif(500)-0.5
+x2=runif(500)-0.5
+y=1*(x1^2-x2^2 > 0)
+```
+
+#b
+```{r}
+dat=data.table(x1=x1,x2=x2,y=as.factor (y))
+plot(x1, x2, col=ifelse(y,"red","blue"))
+```
+
+#c
+```{r}
+LogReg <- glm(y~x1+x2,family=binomial(link='logit'))
+summary(LogReg)
+```
+
+#d
+```{r}
+LogPred <- predict(LogReg,dat,type="response")
+plot(x1,x2, col=ifelse(LogPred>0.5,"red","blue"))
+```
+
+#e
+```{r}
+LogReg2 <- glm(y~poly(x1,2)+poly(x2,2), family=binomial(link='logit'))
+summary(LogReg2)
+```
+
+#f
+```{r}
+LogPred2 <- predict(LogReg2,dat,type="response")
+plot(x1,x2,col=ifelse(LogPred2>0.5,"red","blue"))
+```
+
+#g
+```{r}
+svcfit=svm(as.factor(y)~x1+x2, data=dat, kernel ="linear", cost =1)
+svcPred <- predict(svcfit,dat)
+ggplot(data.table(x1=dat$x1,x2=dat$x2,svcPred=as.factor(svcPred)), aes(x=x1, y=x2, col=svcPred))+geom_point()
+```
+
+#h
+```{r}
+svmfit= svm(as.factor(y)~.,data=dat,kernal="radial",gamma=1,cost=1e5)
+svmPred <- predict(svmfit,dat)
+ggplot(data.table(x1=dat$x1,x2=dat$x2,svmPred=as.factor(svmPred)), aes(x=x1, y=x2, col=svmPred))+geom_point()
+```
+
+#i
+We may conclude that SVM with non-linear kernel and logistic regression with interaction terms are equally very powerful for finding non-linear decision boundaries. 
+Also, SVM with linear kernel and logistic regression without any interaction term are very bad when it comes to finding non-linear decision boundaries. 
+However, one argument in favor of SVM is that it requires some manual tuning to find the right interaction terms when using logistic regression, although when using SVM we only need to tune gamma.

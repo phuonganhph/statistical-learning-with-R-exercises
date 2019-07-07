@@ -1,0 +1,41 @@
+---
+title: '10.11'
+author: "Anh"
+date: "3/28/2019"
+output: html_document
+---
+#10.11
+
+##a Load data
+```{r}
+library(ISLR)
+library(data.table)
+dt <- read.csv("~/Desktop/Applied Data Analysis/Ch10Ex11.csv", header=FALSE)
+```
+
+##b Hierarchical clustering
+```{r}
+dists <- as.dist(1-cor(dt))
+hc.complete <- hclust(dists, method = "complete")
+plot(hc.complete)
+hc.single <- hclust(dists, method = "single")
+plot(hc.single)
+hc.average <- hclust(dists, method = "average")
+plot(hc.average)
+hc.centroid <- hclust(dists, method="centroid")
+plot(hc.centroid)
+```
+Overall, despite different results, all methods somewhat result in two clusters except for average method which results in three clusters.
+
+##c Which genes differ the most?
+We may use PCA to see which genes differ the most. We will look at the absolute values of the total loadings for each gene as it represents the weight of each gene.
+
+```{r}
+pca <- prcomp(t(dt))
+total.load <- apply(pca$rotation, 1, sum)
+index <- order(abs(total.load), decreasing = TRUE)
+index[1:10]
+```
+
+These are the 10 most different genes across the 2 groups in its corresponding row number.
+

@@ -1,0 +1,46 @@
+---
+title: '9.7'
+author: "Anh"
+date: "3/20/2019"
+output: html_document
+---
+#9.7
+```{r}
+library(MASS)
+library(ISLR)
+library(data.table)
+library(e1071)
+library(ggplot2)
+```
+
+##a
+```{r}
+set.seed(1)
+dt <- data.table(Auto)
+var <- ifelse(dt$mpg > median(dt$mpg), 1, 0)
+dt$mpglevel <- as.factor(var)
+```
+
+##b
+```{r}
+tune.out.cost=tune(svm,mpglevel~.,data=dt,kernel ="linear", ranges =list(cost=c(0.001 , 0.01, 0.1, 1,5,10,100)))
+summary(tune.out.cost)
+```
+From the output above, the 4th cost, which is 1, results in the lowest error.
+
+##c
+```{r}
+tune.out.degree=tune(svm,mpglevel~.,data=dt,kernel="polynomial",ranges=list(cost=c(0.001 , 0.01, 0.1, 1,5,10,100),degree=c(2,3,4)))
+summary(tune.out.degree)
+tune.out.gamma=tune(svm,mpglevel~.,data=dt,kernel="radial",ranges=list(cost=c(0.001 , 0.01, 0.1, 1,5,10,100),gamma=c(0.001 , 0.01, 0.1, 1,5,10,100)))
+summary(tune.out.gamma)
+```
+For a polynomial kernel, the lowest cross-validation error is obtained for a degree of 2 and a cost of 100.
+For a radial kernel, the lowest cross-validation error is obtained for a gamma of 2 and a cost of 0.01
+
+##d
+```{r}
+svm.cost =svm(mpglevel~., data=dt, kernel ="linear", cost =1)
+svm.degree= svm(mpglevel~., data=dt,kernal="polynomial",degree=2,cost=100)
+svm.gamma = svm(mpglevel~., data=dt,kernal="radial",gamma=2,cost=0.01)
+```

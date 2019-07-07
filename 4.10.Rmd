@@ -1,0 +1,186 @@
+---
+title: 'Assignment 1 - Anh Pham'
+author: "Anh"
+date: "3/1/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Exercise 4.10
+##a
+
+```{r}
+library(MASS)
+library(ISLR)
+library(data.table)
+weeklyData <- data.table(Weekly)
+summary(weeklyData)
+```
+
+```{r}
+str(weeklyData)
+```
+
+```{r}
+library(ggplot2)
+library(GGally)
+ggpairs(weeklyData)
+```
+
+##b
+```{r}
+model1 <- glm(Direction ~ Lag1+Lag2+Lag3+Lag4+Lag5+Volume, family = 'binomial', data = weeklyData)
+summary(model1)
+```
+
+There is a predictor that appears to be statistically significant: Lag2
+
+##c
+```{r}
+pred<-predict(model1,type="response")
+weeklyData$PredDir<-ifelse(pred>0.5,"Up","Down")
+table(weeklyData$PredDir,weeklyData$Direction)
+```
+
+Among 484 values that go down, the logistic regression has correctly predicted 54 values, and incorrectly predicted 430 values. Meanwhile, among 605 values that go up, the logistic regression has predicted correctly 557 values and incorrectly 48 values.
+
+```{r}
+prop.table(table(weeklyData$PredDir, weeklyData$Direction))
+```
+
+##d
+```{r}
+train <- weeklyData[which(Year<2009)]
+test <- weeklyData[which(Year>2008),]
+model2 <- glm(Direction ~ Lag2, family = 'binomial',data=train)
+pred <- predict(model2, newdata=test, type="response")
+test$PredDir <- ifelse(pred>0.5, "Up", "Down")
+table(test$PredDir, test$Direction)
+```
+
+The overall fraction of correct predictions for the held out data is (9+56)/(9+56+34+5)=0.625
+
+##e
+```{r}
+lda.fit <- lda(Direction ~ Lag2, data=train)
+lda.pred <- predict(lda.fit, test)
+lda.class <- lda.pred$class
+table(lda.class, test$Direction)
+```
+
+The LDA has the same overall fraction of correct predictions as the logistic regression above: 0.625
+
+##f
+```{r}
+qda.fit <- qda(Direction ~ Lag2, data=train)
+qda.pred <- predict(qda.fit, test)
+qda.class <- qda.pred$class
+table(qda.class, test$Direction)
+```
+
+The QDA has the overall fraction of correct predictions as 61/(61+43)= 0.587
+
+##g
+```{r}
+library(FNN)
+trainKNN <- data.table(Lag2 = train$Lag2)
+testKNN <- data.table(Lag2 = test$Lag2)
+knn.pred <- knn(train = trainKNN, test = testKNN, cl = train$Direction, k = 1)
+table(knn.pred, test$Direction)
+```
+
+The overall fraction of correct predictions is (21+31)/(21+31+30+22)= 0.5
+
+##h
+According to the overall fraction of correct predictions, logistic regression and LDA have the best results on this data set.
+
+##Extra Question
+What is the difference between the methods in this excercise and which one should we use for this dataset?
+
+- Logistic Regression and LDA are both good for linear boundaries but differ in fitting procedures. The former estimates using maximum likelihood while the latter uses estimated mean and variance from a normal distribution.
+- QDA is good for non-linear boundaries. Plus, it tends to be a better bet than LDA if the training set is very large, so that the variance of the classifier is not a major concern, or if the assumption of a common covariance matrix for the K classes is clearly untenable. 
+- KNN is a completely non-parametric approach: no assumptions are made about the shape of the decision boundary. Therefore, it is highly helpful when the decision boundary is highly non-linear. However, it does not tell which predictors are important.
+- For this data set that is linear, it is recommended to use Logistic Regression or LDA.
+
+# Exercise 7.10
+##a
+```{r}
+library(magrittr)
+set.seed(1)
+dt <- data.table(College)
+n <- length(dt$Outstate)
+rows <- sample(n,n/2)
+dt.train=data.table(dt[rows,])
+dt.test=data.table(dt[-rows,])
+```
+
+```{r}
+library(leaps)
+reg.fit <- regsubsets(Outstate ~ ., data = dt.train, nvmax = 17, method = "forward")
+reg.summary <- summary(reg.fit)
+
+ggplot(data.frame(cp =reg.summary$cp, nrVar=1:17), aes(x=nrVar, y=cp))+xlab("Number of Variables") + ylab("Cp") + geom_line()
+```
+
+```{r}
+which.min(reg.summary$cp)
+```
+
+```{r}
+ggplot(data.frame(bic =reg.summary$bic, nrVar=1:17), aes(x=nrVar, y=bic))+xlab("Number of Variables") + ylab("BIC") + geom_line()
+```
+
+```{r}
+which.min(reg.summary$bic)
+```
+
+```{r}
+ggplot(data.frame(adjr2 =reg.summary$adjr2, nrVar=1:17), aes(x=nrVar, y=adjr2))+xlab("Number of Variables") + ylab("adjr2") + geom_line()
+```
+
+```{r}
+which.max(reg.summary$adjr2)
+```
+
+```{r}
+co <- coef(reg.fit, id = 6)
+names(co)
+```
+
+##b
+```{r}
+library(gam)
+gam.fit <- gam(Outstate ~ Private + s(Room.Board, df = 2) + s(PhD, df = 2) + 
+    s(perc.alumni, df = 2) + s(Expend, df = 2) + s(Grad.Rate, df = 2), data = dt.train)
+par(mfrow = c(2, 3))
+plot(gam.fit, se = T, col = "red")
+```
+
+##c
+```{r}
+gam.pred <- predict(gam.fit, dt.test)
+gam.err <- mean((dt.test$Outstate - gam.pred)^2)
+gam.err
+```
+
+```{r}
+lm.pred <- predict(lm(Outstate~Private+Room.Board+PhD+perc.alumni+Expend+Grad.Rate, data = dt.train), dt.test)
+lm.err <- mean((dt.test$Outstate - lm.pred)^2)
+lm.err
+```
+
+The RSS from normal linear model is higher, which shows positive results.
+
+##d
+```{r}
+summary(gam.fit)
+```
+
+According to Anova for Nonparametric Effects, there is a strong non-linear relationship between Expend and Outstate and a supposed non-linear relationship between PhD and Outstate.
+
+##Extra Question
+Give a short description on GAM models.
+- 

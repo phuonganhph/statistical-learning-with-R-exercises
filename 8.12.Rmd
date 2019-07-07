@@ -1,0 +1,81 @@
+---
+title: '8.12'
+author: "Anh"
+date: "3/23/2019"
+output: html_document
+---
+For this questions, we'll be looking at the Boston data set.
+
+```{r}
+library(tree)
+library(MASS)
+library(ISLR)
+library(data.table)
+library(randomForest)
+library(gbm)
+library(glmnet)
+
+set.seed(1)
+dt <- data.table(Boston)
+n <- length(dt$medv)
+rows <- sample(n,n/2)
+dt.train=data.table(dt[rows,])
+dt.test=data.table(dt[-rows,])
+```
+
+#Boosting
+```{r}
+shrinkage <- seq(0.1, 1, by = 0.1)
+test.err <- rep(NA, length(shrinkage))
+for (i in 1:length(shrinkage)) {
+    boost = gbm(medv~.,data=dt.train, distribution="gaussian", n.trees = 1000, shrinkage = shrinkage[i])
+    boost.pred <- predict(boost, dt.test, n.trees = 1000)
+    test.err[i] <- mean((boost.pred - dt.test$medv)^2)
+}
+plot(shrinkage, test.err, type = "b", xlab = "Shrinkage values", ylab = "Test MSE")
+min(test.err)
+```
+
+Test error rate of Boosting is 14.46734
+
+#Bagging
+```{r}
+bag <-randomForest(medv~.,data=dt.train, mtry=13, importance =TRUE)
+bag.pred=predict(bag,dt.test)
+mean((bag.pred-dt.test$medv) ^2 )
+```
+
+Test error rate of Bagging is 13.58409
+
+#Random Forest
+```{r}
+rf <-randomForest(medv~.,data=dt.train, mtry=3, importance =TRUE)
+rf.pred=predict(rf,dt.test)
+mean((rf.pred-dt.test$medv) ^2 )
+```
+
+Test error rate of Random Forest is 12.39217
+
+#Linear Regression
+```{r}
+lin <- lm(medv ~ ., data = dt.train)
+lin.pred <- predict(lin, dt.test)
+mean((lin.pred - dt.test$medv)^2)
+```
+
+Test error rate of Linear Regression is 26.28676
+
+#Logistic Regression Lasso
+```{r}
+x <- model.matrix(medv ~ ., data = dt.train)
+x.test <- model.matrix(medv ~ ., data = dt.test)
+y <- dt.train$medv
+rid <- glmnet(x, y, alpha = 0)
+rid.pred <- predict(rid, s = 0.01, newx = x.test)
+mean((rid.pred - dt.test$medv)^2)
+```
+
+Test error rate of Logistic Regression Lasso is 25.47149
+
+#Conclusion
+Linear Regression -> Lasso -> Random Forest -> Bagging -> Boosting

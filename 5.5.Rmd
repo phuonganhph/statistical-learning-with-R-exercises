@@ -1,0 +1,89 @@
+---
+title: '5.5'
+author: "Anh"
+date: "3/1/2019"
+output: html_document
+---
+
+## a
+```{r}
+library(MASS)
+library(ISLR)
+library(data.table)
+library(ggplot2)
+library(GGally)
+library(gam)
+
+set.seed(1)
+dt <- data.table(College)
+n <- length(dt$Outstate)
+rows <- sample(n,n/2)
+dt.train=data.table(dt[-rows,])
+dt.test=data.table(dt[rows,])
+```
+
+dt.train <- College[rows, ] %>% data.table()
+dt.test <- College[-rows, ] %>% data.table()
+
+```{r}
+library(leaps)
+reg.fit <- regsubsets(Outstate ~ ., data = dt.train, nvmax = 17, method = "forward")
+reg.summary <- summary(reg.fit)
+
+ggplot(data.frame(cp =reg.summary$cp, nrVar=1:17), aes(x=nrVar, y=cp))+xlab("Number of Variables") + ylab("Cp") + geom_line()
+```
+
+```{r}
+which.min(reg.summary$cp)
+```
+
+```{r}
+ggplot(data.frame(bic =reg.summary$bic, nrVar=1:17), aes(x=nrVar, y=bic))+xlab("Number of Variables") + ylab("BIC") + geom_line()
+```
+
+```{r}
+which.min(reg.summary$bic)
+```
+
+```{r}
+ggplot(data.frame(adjr2 =reg.summary$adjr2, nrVar=1:17), aes(x=nrVar, y=adjr2))+xlab("Number of Variables") + ylab("adjr2") + geom_line()
+```
+
+```{r}
+which.max(reg.summary$adjr2)
+```
+
+```{r}
+co <- coef(reg.fit, id = 6)
+names(co)
+```
+
+##b
+```{r}
+gam.fit <- gam(Outstate ~ Private + s(Room.Board, df = 2) + s(PhD, df = 2) + 
+    s(perc.alumni, df = 2) + s(Expend, df = 2) + s(Grad.Rate, df = 2), data = dt.train)
+par(mfrow = c(2, 3))
+plot(gam.fit, se = T, col = "red")
+```
+
+##c
+```{r}
+gam.pred <- predict(gam.fit, dt.test)
+gam.err <- mean((dt.test$Outstate - gam.pred)^2)
+gam.err
+```
+
+```{r}
+lm.pred <- predict(lm(Outstate~Private+Room.Board+PhD+perc.alumni+Expend+Grad.Rate, data = dt.train), dt.test)
+lm.err <- mean((dt.test$Outstate - lm.pred)^2)
+lm.err
+```
+
+The RSS from normal linear model is higher, which shows positive results.
+
+##d
+```{r}
+summary(gam.fit)
+```
+
+Anova for Nonparametric Effects shows a strong non-linear relationship between Expend and Outstate and a supposed non-linear relationship between Grad.Rate and Outstate.

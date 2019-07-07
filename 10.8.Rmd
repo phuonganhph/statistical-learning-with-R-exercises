@@ -1,0 +1,34 @@
+---
+title: '10.8'
+author: "Anh"
+date: "3/23/2019"
+output: html_document
+---
+
+```{r}
+library(ISLR)
+library(data.table)
+```
+
+##a) sdev output of the prcomp()
+Proportion of variance explained = variance explained by each principal component
+/ total variance explained by all four principal components
+The variance explained by each principal component is obtained by squaring the standard deviation.
+
+```{r}
+pr.out = prcomp(USArrests , scale =TRUE)
+pr.var =pr.out$sdev ^2
+pve=pr.var/sum(pr.var )
+pve
+```
+
+##b) Calculation
+
+![Calculation Formula](/Users/admin/Desktop/Applied Data Analysis/Caculation.png)
+
+```{r}
+loadings <- pr.out$rotation # get the loadings
+dt <- scale(USArrests) # scaling the data
+sumvar <- sum(apply(as.matrix(dt)^2, 2, sum)) #lower half of the equation
+apply((as.matrix(dt) %*% loadings)^2, 2, sum) / sumvar #top half
+```

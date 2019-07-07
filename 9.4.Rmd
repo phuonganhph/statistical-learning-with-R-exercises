@@ -1,0 +1,70 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+
+#9.4
+
+```{r}
+library(e1071)
+library(data.table)
+```
+
+First, we create two-class data set with 100 observations and
+two features in which there is a visible but non-linear separation between
+the two classes. We also create training and test data.
+```{r}
+set.seed(1)
+x <- rnorm(100)
+y <- 4 * x^2 + 1 + rnorm(100)
+class <- sample(100, 50)
+y[class] <- y[class] + 3
+y[-class] <- y[-class] - 3
+plot(x[class], y[class], col = "red", xlab = "X", ylab = "Y", ylim = c(-6, 30))
+points(x[-class], y[-class], col = "blue")
+
+z <- rep(-1, 100)
+z[class] <- 1
+dt <- data.frame(x = x, y = y, z = as.factor(z))
+train <- sample(100, 50)
+dt.train <- dt[train, ]
+dt.test <- dt[-train, ]
+```
+
+Then, we fit the support vector classifier on the training data and its training error rate is 12%
+```{r}
+svc = svm(z~., data=dt.train, kernel ="linear", cost =10)
+plot(svc,dt.train)
+svc.pred = predict(svc,dt.train)
+table(svc.pred,dt.train$z)
+```
+
+Next, we have the support vector machine with a polynomial kernel (with degree 2) and its training error rate is 42%.
+```{r}
+svmpoly = svm(z~.,data=dt.train,kernel="polynomial",cost=10)
+plot(svmpoly,dt.train)
+svmpoly.pred = predict(svmpoly,dt.train)
+table(svmpoly.pred,dt.train$z)
+```
+
+And the support vector machine with a radial kernel and its training error rate is 0%.
+```{r}
+svmrad = svm(z~.,data=dt.train,kernel="radial",gamma=1,cost=10)
+plot(svmrad,dt.train)
+svmrad.pred=predict(svmrad,dt.train)
+table(svmrad.pred,dt.train$z)
+```
+As can be seen, in the train data, the SVM radial performs the best, then the SVM linear and then the SVM polynomial.
+
+After that, we check all three methods on the test data and compute the test error rate.
+```{r}
+svc.pred2=predict(svc,dt.test)
+table(svc.pred2,dt.test$z)
+svmpoly.pred2=predict(svmpoly,dt.test)
+table(svmpoly.pred2,dt.test$z)
+svmrad.pred2=predict(svmrad,dt.test)
+table(svmpoly.pred2,dt.test$z)
+```
+As can be seen, in the test data, the linear SVM performs the best with lowest test error rate of 12%. The other SVM perform similar with test error rates of 54%.

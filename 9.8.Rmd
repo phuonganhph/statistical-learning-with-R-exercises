@@ -1,0 +1,120 @@
+---
+title: '9.8'
+output:
+  html_document:
+    df_print: paged
+---
+#9.8
+```{r}
+library(MASS)
+library(ISLR)
+library(data.table)
+library(e1071)
+library(ggplot2)
+```
+
+##a
+```{r}
+set.seed(1)
+dt <- data.table(OJ)
+n <- length(dt$Purchase)
+rows <- sample(n,800)
+dt.train=data.table(dt[rows,])
+dt.test=data.table(dt[-rows,])
+```
+
+##b
+```{r}
+svm.fit =svm(Purchase~., data=dt.train, kernel ="linear", cost =0.01)
+summary(svm.fit)
+```
+There is 432 support vectors, 215 in one class and 217 in the other.
+
+##c
+```{r}
+svmpred.train = predict(svm.fit,dt.train)
+table(svmpred.train, dt.train$Purchase)
+svmpred.test = predict(svm.fit,dt.test)
+table(svmpred.test, dt.test$Purchase)
+```
+Training error rate is: 16.6%
+Test error rate is: 18.1%
+
+##d
+```{r}
+tune.out=tune(svm,Purchase~., data=dt.train, kernel ="linear", ranges =list(cost=c(0.01, 0.1, 1,5,10)))
+summary(tune.out)
+```
+The cost with lowest error is 0.1
+
+##e
+```{r}
+svm.fit2 =svm(Purchase~., data=dt.train, kernel ="linear", cost =0.1)
+svmpred2.train = predict(svm.fit2,dt.train)
+table(svmpred2.train, dt.train$Purchase)
+svmpred2.test = predict(svm.fit2,dt.test)
+table(svmpred2.test, dt.test$Purchase)
+```
+Training error rate is: 15.8%
+Test error rate is: 18.9%
+
+##f
+```{r}
+svmgamma= svm(Purchase~., data=dt.train,kernal="radial")
+
+svmgamma.train = predict(svmgamma,dt.train)
+table(svmgamma.train, dt.train$Purchase)
+
+svmgamma.test = predict(svmgamma,dt.test)
+table(svmgamma.test, dt.test$Purchase)
+```
+Training error rate is 14.5%
+Test error rate is 17%
+
+```{r}
+tune.out2=tune(svm,Purchase~., data=dt.train, kernel ="radial", ranges =list(cost=c(0.01, 0.1, 1,5,10)))
+summary(tune.out2)
+
+svmgamma2=svm(Purchase~., data=dt.train,kernal="radial",cost=5)
+svmgamma2.train = predict(svmgamma2,dt.train)
+table(svmgamma.train, dt.train$Purchase)
+
+svmgamma2.test = predict(svmgamma2,dt.test)
+table(svmgamma.test, dt.test$Purchase)
+```
+Training error rate is 14.5%
+Test error rate is 17%
+
+##g
+```{r}
+svmdegree= svm(Purchase~., data=dt.train,kernal="polynomial",degree=2)
+
+svmdegree.train = predict(svmdegree,dt.train)
+table(svmdegree.train, dt.train$Purchase)
+
+svmdegree.test = predict(svmdegree,dt.test)
+table(svmdegree.test, dt.test$Purchase)
+```
+Training error rate is 14.5%
+Test error rate is 17%
+
+```{r}
+tune.out3=tune(svm,Purchase~., data=dt.train, kernel ="polynomial", ranges =list(cost=c(0.01, 0.1, 1,5,10),degree=2))
+summary(tune.out3)
+
+svmdegree2= svm(Purchase~., data=dt.train,kernal="polynomial",degree=2,cost=10)
+
+svmdegree2.train = predict(svmdegree2,dt.train)
+table(svmdegree2.train, dt.train$Purchase)
+
+svmdegree2.test = predict(svmdegree2,dt.test)
+table(svmdegree2.test, dt.test$Purchase)
+```
+Training error rate is 13.9%
+Test error rate is 18.9%
+
+From the three above methods, we can see that the tune out of SVM with polynomial kernel and of SVC decreases the training error rate but increases the test error rate.
+Meanwhile, the tune out of SVM with radial kernel does not give any improvement.
+
+##h
+From my calculations, the SVM with linear basis or polynomial kernal basis seem to give similar improvements, better than the radial kernal.

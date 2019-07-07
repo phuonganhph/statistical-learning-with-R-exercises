@@ -1,0 +1,92 @@
+---
+title: "8.9"
+output:
+  html_document:
+    df_print: paged
+---
+
+##a
+```{r}
+library(tree)
+library(MASS)
+library(ISLR)
+library(data.table)
+library(randomForest)
+
+set.seed(1)
+dt <- data.table(OJ)
+n <- length(dt$Purchase)
+rows <- sample(n,800)
+dt.train=data.table(dt[rows,])
+dt.test=data.table(dt[-rows,])
+```
+
+##b
+```{r}
+tree.OJ <- tree(Purchase~., data = dt.train)
+summary(tree.OJ)
+```
+
+The tree has 8 terminal nodes, with a training error rate of 0.165
+
+##c
+```{r}
+tree.OJ
+```
+
+The eight node, also a terminal node (because of the asterisk), is split based on the criteria LoyalCH < 0.0356415 on 57 observations. It takes an overall prediction of MM with a deviance of 10.07. Indeed, 1.75% takes on CH value and 98.25% takes on MM value.
+LoyalCH < 0.0356415 57   10.07 MM ( 0.01754 0.98246 ) *
+
+##d
+```{r}
+plot(tree.OJ )
+text(tree.OJ ,pretty =0)
+```
+
+We may see that the most important indicator of "Purchase" appears to be "LoyalCH", since the first branch differentiates the intensity of customer brand loyalty to CH. Moreover, the top three nodes contain "LoyalCH".
+
+##e
+```{r}
+tree.OJ.pred=predict(tree.OJ,dt.test,type="class")
+table(tree.OJ.pred,dt.test$Purchase)
+```
+Test error rate is 23.16%
+
+##f
+```{r}
+cv.tree <- cv.tree(tree.OJ, FUN=prune.misclass)
+cv.tree
+```
+
+##g
+```{r}
+plot(cv.tree$size,cv.tree$dev,xlab="Size",ylab="Deviance")
+```
+
+##h
+The tree size of 2, 5, 8 has the smallest deviance.
+
+##i
+```{r}
+pruned_tree <- prune.tree(tree.OJ, best = 5)
+plot(pruned_tree)
+text(pruned_tree ,pretty =0)
+```
+
+##j
+```{r}
+tree.OJ.pred2 = predict(tree.OJ,dt.train,type="class")
+table(tree.OJ.pred2,dt.train$Purchase)
+
+pruned_tree.pred = predict(pruned_tree,dt.train,type="class")
+table(pruned_tree.pred,dt.train$Purchase)
+```
+
+Training error rate of unpruned tree and pruned tree are respectively: 16.5% and 18.25%. 
+
+##k
+```{r}
+pruned_tree.pred2 = predict(pruned_tree,dt.test,type="class")
+table(pruned_tree.pred2,dt.test$Purchase)
+```
+Test error rate is 25.93% which is higher than that of unpruned tree.

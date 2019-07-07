@@ -1,0 +1,88 @@
+---
+title: '8.10'
+output:
+  html_document:
+    df_print: paged
+---
+
+##a
+```{r}
+library(tree)
+library(MASS)
+library(ISLR)
+library(data.table)
+library(randomForest)
+library(gbm)
+set.seed(1)
+dt <- data.table(na.omit(Hitters))
+dt$Salary <- log(dt$Salary)
+```
+
+##b
+```{r}
+n <- length(dt$Salary)
+rows <- sample(n,200)
+dt.train=data.table(dt[rows,])
+dt.test=data.table(dt[-rows,])
+```
+
+##c Boosting on training data set
+```{r}
+shrinkage <- seq(0.1, 1, by = 0.1)
+train.err <- rep(NA, length(shrinkage))
+for (i in 1:length(shrinkage)) {
+    boost = gbm(Salary~.,data=dt.train, distribution="gaussian", n.trees = 1000, shrinkage = shrinkage[i])
+    pred.train <- predict(boost, dt.train, n.trees = 1000)
+    train.err[i] <- mean((pred.train - dt.train$Salary)^2)
+}
+plot(shrinkage, train.err, type = "b", xlab = "Shrinkage values", ylab = "Training MSE")
+```
+
+##d Boosting on test data set
+```{r}
+test.err <- rep(NA, length(shrinkage))
+for (i in 1:length(shrinkage)) {
+    boost2 = gbm(Salary~.,data=dt.test, distribution="gaussian", n.trees = 1000, shrinkage = shrinkage[i])
+    pred.test <- predict(boost2, dt.test, n.trees = 1000)
+    test.err[i] <- mean((pred.test - dt.test$Salary)^2)
+}
+plot(shrinkage, test.err, type = "b", xlab = "Shrinkage values", ylab = "Test MSE")
+min(test.err)
+shrinkage[which.min(test.err)]
+```
+
+The shrinkage 1 gives the lowest test MSE.
+
+##e Compare with linear regression and lasso ridge regression on test data set
+```{r}
+library(glmnet)
+lin <- lm(Salary ~ ., data = dt.train)
+lin.pred <- predict(lin, dt.test)
+mean((lin.pred - dt.test$Salary)^2)
+
+x <- model.matrix(Salary ~ ., data = dt.train)
+x.test <- model.matrix(Salary ~ ., data = dt.test)
+y <- dt.train$Salary
+rid <- glmnet(x, y, alpha = 0)
+rid.pred <- predict(rid, s = 0.01, newx = x.test)
+mean((rid.pred - dt.test$Salary)^2)
+```
+
+Indeed, test MSE of boosting is the lowest.
+  
+##f
+```{r}
+boost3 = gbm(Salary~.,data=dt.train, distribution="gaussian", n.trees = 1000, shrinkage = shrinkage[which.min(test.err)])
+summary(boost3)
+```
+
+We can see that the variable CHits is the most important.
+
+##g
+```{r}
+bag = randomForest(Salary~.,data=dt.train, mtry=19, importance =TRUE, mtree=500)
+bag.pred = predict(bag,dt.test)
+mean((bag.pred-dt.test$Salary)^2)
+```
+
+Test MSE of bagging is 0.117332.

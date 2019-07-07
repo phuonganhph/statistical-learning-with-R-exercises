@@ -1,0 +1,41 @@
+---
+title: '10.9'
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+library(ISLR)
+library(data.table)
+dt <- data.table(USArrests)
+```
+
+##a Hierarchical clustering with complete linkage and Euclidean distance
+```{r}
+hc.complete = hclust(dist(dt), method ="complete")
+plot(hc.complete ,main="Complete Linkage", xlab="", sub ="", cex =.9)
+```
+
+##b
+Cut the dendrogram at a height that results in three distinct clusters. Which states belong to which clusters?
+```{r}
+hc.3clusters=cutree(hc.complete, 3)
+```
+
+##c
+Hierarchically cluster the states using complete linkage and Euclidean distance, after scaling the variables to have standard deviation one.
+```{r}
+dt2 <- scale(data.table(USArrests))
+hc.complete2 = hclust(dist(dt2), method ="complete")
+plot(hc.complete2,main="Complete Linkage", xlab="", sub ="", cex =.9)
+```
+
+##d
+What effect does scaling the variables have on the hierarchical clustering obtained? In your opinion, should the variables be scaled before the inter-observation dissimilarities are computed? Provide a justification for your answer.
+
+```{r}
+hc.3clusters2 = cutree(hc.complete2, 3)
+table(hc.3clusters,hc.3clusters2)
+```
+Scaling the variables affect the clusters obtained although the trees are somewhat similar. The variables should be scaled beforehand because the data measures have different units.
